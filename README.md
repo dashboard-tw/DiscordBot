@@ -10,9 +10,10 @@
 使用`.env.example`進行設置後將其改名為`.env`環境變數檔案：
 
 ```ini
-TOKEN="yourbottoken"    // 設置機器人的TOKEN
-PREFIX="yourbotprefix"  // 設置機器人的觸發前綴(預設為"!")
-API_KEY="yourapikey"    // 設置dashboard.tw的API Key
+TOKEN="yourbottoken"              // 設置機器人的TOKEN
+PREFIX="yourbotprefix"            // 設置機器人的觸發前綴(預設為"!")
+CLIENT_ID="yourclientid"          // 設置dashboard.tw的client id
+CLIENT_SECRET="yourclientsecret"  // 設置dashboard.tw的client secret
 ```
 
 ## TODO
