@@ -1,0 +1,10 @@
+[package]
+name = "twdash-bot"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = "0.13"
+poise = "0.7.1"
+tokio = { version = "1.21.2", features = ["macros", "rt-multi-thread"] }
+dotenvy = "0.15.7"
