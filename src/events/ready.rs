@@ -50,6 +50,12 @@ pub async fn handle(ready: &serenity::Ready) {
 mod tests {
     use super::*;
 
+    fn field_value<'a>(payload: &'a Value, name: &str) -> &'a Value {
+        &payload["embeds"][0]["fields"].as_array().expect("Embed fields must be an array")
+            .iter().find(|field| field["name"] == name)
+            .unwrap_or_else(|| panic!("Missing Embed field: {name}"))["value"]
+    }
+
     #[test]
     fn ready_payload_contains_guild_count_and_optional_avatar() {
         let mut ready: serenity::Ready = serde_json::from_value(json!({
@@ -62,7 +68,8 @@ mod tests {
         })).unwrap();
         let payload = Notification::from_event(&ready).payload();
         assert_eq!(payload["embeds"][0]["title"], "機器人上線");
-        assert_eq!(payload["embeds"][0]["fields"][0]["value"], "1");
+        assert_eq!(field_value(&payload, "機器人資料"), "test-bot(`123`)");
+        assert_eq!(field_value(&payload, "伺服器數量"), "1");
         assert_eq!(payload["allowed_mentions"]["parse"], json!([]));
         assert!(payload["embeds"][0].get("thumbnail").is_none());
 
@@ -70,6 +77,6 @@ mod tests {
         let payload = Notification::from_event(&ready).payload();
         assert_eq!(payload["embeds"][0]["thumbnail"]["url"], ready.user.avatar_url().unwrap());
         ready.guilds.clear();
-        assert_eq!(Notification::from_event(&ready).payload()["embeds"][0]["fields"][0]["value"], "0");
+        assert_eq!(field_value(&Notification::from_event(&ready).payload(), "伺服器數量"), "0");
     }
 }
