@@ -1,6 +1,9 @@
 use std::env;
+use std::sync::OnceLock;
 
-pub const BASE_URL: &'static str = "http://localhost:8080";
+static CONFIG: OnceLock<Result<Config, String>> = OnceLock::new();
+
+pub const BASE_URL: &'static str = "https://dashboard.tw/api/v1";
 
 #[derive(Clone)]
 pub struct ClientConfig {
@@ -13,6 +16,7 @@ pub struct Config {
     pub token: String,
     pub prefix: String,
     pub client_config: ClientConfig,
+    pub admins: Vec<String>,
     pub key: Option<String>,
 }
 
@@ -26,6 +30,26 @@ impl ClientConfig {
 }
 
 impl Config {
+    /// Initializes once. Initialization failures are cached until the process restarts.
+    pub fn init() -> Result<&'static Self, String> {
+        CONFIG
+            .get_or_init(Self::from_env)
+            .as_ref()
+            .map_err(Clone::clone)
+    }
+
+    /// Returns the shared configuration after `Config::init()` succeeds.
+    pub fn get() -> &'static Self {
+        CONFIG
+            .get()
+            .and_then(|result| result.as_ref().ok())
+            .expect("Config::init() must succeed before Config::get() is called")
+    }
+
+    pub fn is_admin(&self, user_id: &str) -> bool {
+        self.admins.iter().any(|admin| admin == user_id)
+    }
+
     pub fn from_env() -> Result<Self, String> {
         dotenvy::dotenv().ok();
 
@@ -39,6 +63,9 @@ impl Config {
 
         let prefix = env::var("PREFIX").unwrap_or_else(|_| "!".to_string());
 
+        let raw_admins = env::var("ADMINS").unwrap_or_else(|_| "[]".to_string());
+        let admins = parse_admins(&raw_admins)?;
+
         let client_config = ClientConfig::new(client_id, client_secret);
 
         Ok(Self {
@@ -46,6 +73,33 @@ impl Config {
             prefix: prefix,
             client_config: client_config,
             key: None,
+            admins: admins,
         })
+    }
+}
+
+fn parse_admins(raw: &str) -> Result<Vec<String>, String> {
+    serde_json::from_str(raw).map_err(|_| {
+        "Invalid ADMINS: expected a JSON string array, e.g. ADMINS='[\"123456789\"]'".to_string()
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_admins;
+
+    #[test]
+    fn admins_accepts_string_ids() {
+        assert_eq!(
+            parse_admins(r#"["1058383460043083787"]"#).unwrap(),
+            vec!["1058383460043083787"]
+        );
+        assert!(parse_admins("[]").unwrap().is_empty());
+    }
+
+    #[test]
+    fn admins_rejects_numeric_ids_instead_of_silently_removing_permissions() {
+        assert!(parse_admins("[1058383460043083787]").is_err());
+        assert!(parse_admins("invalid").is_err());
     }
 }

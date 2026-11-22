@@ -5,6 +5,8 @@
 
 由Rust所編寫的Discord機器人，依照[SampleCode](https://github.com/dashboard-tw/SampleCode)進行使用者的互動開發。
 
+設定與資料請至[dashboard.tw](https://dashboard.tw)進行取得。
+
 ## 基本設置
 
 使用`.env.example`進行設置後將其改名為`.env`環境變數檔案：
@@ -14,6 +16,7 @@ TOKEN="yourbottoken"              // 設置機器人的TOKEN
 PREFIX="yourbotprefix"            // 設置機器人的觸發前綴(預設為"!")
 CLIENT_ID="yourclientid"          // 設置dashboard.tw的client id
 CLIENT_SECRET="yourclientsecret"  // 設置dashboard.tw的client secret
+ADMINS=[]                         // 設置管理指令如 ADMINS='["123456789012345678"]'
 ```
 
 ## TODO
@@ -25,7 +28,9 @@ CLIENT_SECRET="yourclientsecret"  // 設置dashboard.tw的client secret
   - [x] 錯誤處理
 
 - [ ] API交互
-  - [ ] 檢查健康狀態
+  - [x] 檢查健康狀態
+  - [x] 自動刷新token
+  - [x] 強制刷新token
   - [ ] 請求資料
   - [ ] 更多...
 

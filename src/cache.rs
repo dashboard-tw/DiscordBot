@@ -1,7 +1,8 @@
-
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 use tokio::sync::RwLock;
+
+use crate::cache;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CacheValue {
@@ -10,8 +11,15 @@ pub enum CacheValue {
     Bool(bool),
 }
 
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct TokenAnswer {
+    pub access_token: String,
+    pub expires_in: u64,
+}
+
 pub struct Cache {
     pub ready: bool,
+    pub token: Option<TokenAnswer>,
     pub data: HashMap<String, CacheValue>,
 }
 
@@ -19,6 +27,7 @@ impl Cache {
     pub fn new() -> Self {
         Self {
             ready: false,
+            token: None,
             data: HashMap::new(),
         }
     }
@@ -36,6 +45,31 @@ pub fn get() -> SharedCache {
     CACHE
         .get_or_init(|| Arc::new(RwLock::new(Cache::new())))
         .clone()
+}
+
+pub async fn get_token_answer() -> Result<TokenAnswer, String> {
+    let cache = get();
+    let data = cache.read().await;
+
+    if let Some(token) = &data.token {
+        Ok(token.clone())
+    } else {
+        Ok(cache::TokenAnswer {
+            access_token: "token".to_string(),
+            expires_in: 0,
+        })
+    }
+}
+pub async fn update_token(token: &str, expires_in: u64) -> Result<(), String> {
+    let cache = get();
+    let mut data = cache.write().await;
+
+    data.token = Some(TokenAnswer {
+        access_token: token.to_string(),
+        expires_in,
+    });
+
+    Ok(())
 }
 
 pub async fn push_value(key: &str, value: &CacheValue) -> Result<(), String> {
