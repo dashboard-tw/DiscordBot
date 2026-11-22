@@ -28,7 +28,7 @@ pub type Empty = std::collections::BTreeMap<String, serde_json::Value>;
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ApiError {
-    pub error: ErrorDetail,
+    pub error: ErrorError,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -101,7 +101,7 @@ pub struct DownloadIndexFilesItem {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct ErrorDetail {
+pub struct ErrorError {
     pub code: String,
     pub message: String,
 }

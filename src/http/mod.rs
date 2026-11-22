@@ -1,4 +1,5 @@
 use reqwest::Client;
+pub mod datasets;
 use std::sync::OnceLock;
 
 pub struct HttpClient {
@@ -20,7 +21,7 @@ impl HttpClient {
     pub fn init() {
         HTTP.get_or_init(Self::new);
     }
-    
+
     pub fn get() -> &'static Self {
         HTTP.get_or_init(Self::new)
     }

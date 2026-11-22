@@ -20,6 +20,7 @@ pub struct TokenAnswer {
 pub struct Cache {
     pub ready: bool,
     pub token: Option<TokenAnswer>,
+    pub token_updated_at: Option<std::time::Instant>,
     pub data: HashMap<String, CacheValue>,
 }
 
@@ -28,6 +29,7 @@ impl Cache {
         Self {
             ready: false,
             token: None,
+            token_updated_at: None,
             data: HashMap::new(),
         }
     }
@@ -68,6 +70,7 @@ pub async fn update_token(token: &str, expires_in: u64) -> Result<(), String> {
         access_token: token.to_string(),
         expires_in,
     });
+    data.token_updated_at = Some(std::time::Instant::now());
 
     Ok(())
 }

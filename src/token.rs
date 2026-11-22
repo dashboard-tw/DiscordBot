@@ -5,6 +5,21 @@ use crate::{
     http::HttpClient,
 };
 
+pub async fn access_token() -> Result<String, Error> {
+    static LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _guard = LOCK.lock().await;
+    {
+        let shared = cache::get();
+        let cached = shared.read().await;
+        if let (Some(token), Some(updated)) = (&cached.token, cached.token_updated_at) {
+            if updated.elapsed().as_secs() < token.expires_in.saturating_sub(60) {
+                return Ok(token.access_token.clone());
+            }
+        }
+    }
+    Ok(refresh_token(Config::get()).await?.access_token)
+}
+
 pub async fn fetch_token(config: &Config) -> Result<TokenAnswer, Error> {
     fetch_token_from(config, config::BASE_URL).await
 }
