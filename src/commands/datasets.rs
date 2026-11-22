@@ -9,6 +9,10 @@ use poise::{
 };
 use serde_json::Value;
 
+// rust test
+#[cfg(test)]
+mod tests;
+
 fn shorten(text: &str, limit: usize) -> String {
     let text = text
         .replace(['`', '*', '_', '~', '|'], "")
@@ -79,7 +83,16 @@ pub fn build_embed(
     let rows = response.body["data"]
         .as_array()
         .ok_or("目前無法解析資料，請稍後再試。")?;
-    let page_size = 3;
+    let image_key = if matches!(endpoint, Endpoint::Sites) {
+        None
+    } else if info.fields.iter().any(|(key, _, _)| *key == "image_url") {
+        Some("image_url")
+    } else if matches!(dataset, "radar_image" | "satellite_image" | "radar_layer" | "cloud_layer" | "wind_layer") {
+        Some("url")
+    } else {
+        None
+    };
+    let page_size = if image_key.is_some() { 1 } else { 3 };
     let pages = rows.len().div_ceil(page_size).max(1);
     if page == 0 || page as usize > pages {
         return Err("頁碼超出範圍，請從第1頁開始查詢。");
@@ -145,7 +158,7 @@ pub fn build_embed(
         .colour(0x3498db)
         .description(description)
         .footer(CreateEmbedFooter::new(format!(
-            "第{page}/{pages}頁・{cache}・每10分鐘更新快取\n來源：{}｜{}",
+            "第{page}/{pages}頁・{cache}・來源：{}｜{}",
             shorten(agency, 70),
             shorten(license, 100)
         )));
@@ -155,6 +168,14 @@ pub fn build_embed(
         info.fields
     };
     for (offset, row) in rows.iter().skip(start).take(page_size).enumerate() {
+        if let Some(url) = image_key.and_then(|key| row.get(key)).and_then(Value::as_str).filter(|url| !url.trim().is_empty()) {
+            let base = reqwest::Url::parse("https://dashboard.tw").expect("Invalid image base URL");
+            if let Ok(url) = base.join(url.trim()) {
+                if matches!(url.scheme(), "http" | "https") && url.host_str().is_some() {
+                    embed = embed.image(url.as_str());
+                }
+            }
+        }
         let name = [
             "name",
             "station_name",
@@ -171,6 +192,9 @@ pub fn build_embed(
         let mut lines = Vec::new();
         let mut used = 0;
         for &(key, label, unit) in fields {
+            if Some(key) == image_key {
+                continue;
+            }
             let Some(value) = row.get(key).and_then(display_value) else {
                 continue;
             };

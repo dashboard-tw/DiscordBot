@@ -91,9 +91,8 @@ pub async fn power_region(
 #[poise::command(slash_command)]
 pub async fn power_load(
     ctx: Context<'_>,
-    #[description = "顯示頁碼"] page: Option<u32>,
 ) -> Result<(), Error> {
-    send_dataset(ctx, "power_load", Endpoint::Latest, None, None, page).await
+    send_dataset(ctx, "power_load", Endpoint::Latest, None, None, None).await
 }
 #[poise::command(slash_command)]
 pub async fn power_peak_daily(

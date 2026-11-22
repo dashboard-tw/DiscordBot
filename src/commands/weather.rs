@@ -182,37 +182,32 @@ pub async fn shelter_report(
 #[poise::command(slash_command)]
 pub async fn radar_image(
     ctx: Context<'_>,
-    #[description = "顯示頁碼"] page: Option<u32>,
 ) -> Result<(), Error> {
-    send_dataset(ctx, "radar_image", Endpoint::Latest, None, None, page).await
+    send_dataset(ctx, "radar_image", Endpoint::Latest, None, None, None).await
 }
 #[poise::command(slash_command)]
 pub async fn satellite_image(
     ctx: Context<'_>,
-    #[description = "顯示頁碼"] page: Option<u32>,
 ) -> Result<(), Error> {
-    send_dataset(ctx, "satellite_image", Endpoint::Latest, None, None, page).await
+    send_dataset(ctx, "satellite_image", Endpoint::Latest, None, None, None).await
 }
 #[poise::command(slash_command)]
 pub async fn radar_layer(
     ctx: Context<'_>,
-    #[description = "顯示頁碼"] page: Option<u32>,
 ) -> Result<(), Error> {
-    send_dataset(ctx, "radar_layer", Endpoint::Latest, None, None, page).await
+    send_dataset(ctx, "radar_layer", Endpoint::Latest, None, None, None).await
 }
 #[poise::command(slash_command)]
 pub async fn cloud_layer(
     ctx: Context<'_>,
-    #[description = "顯示頁碼"] page: Option<u32>,
 ) -> Result<(), Error> {
-    send_dataset(ctx, "cloud_layer", Endpoint::Latest, None, None, page).await
+    send_dataset(ctx, "cloud_layer", Endpoint::Latest, None, None, None).await
 }
 #[poise::command(slash_command)]
 pub async fn wind_layer(
     ctx: Context<'_>,
-    #[description = "顯示頁碼"] page: Option<u32>,
 ) -> Result<(), Error> {
-    send_dataset(ctx, "wind_layer", Endpoint::Latest, None, None, page).await
+    send_dataset(ctx, "wind_layer", Endpoint::Latest, None, None, None).await
 }
 #[poise::command(slash_command)]
 pub async fn fire_incident(
