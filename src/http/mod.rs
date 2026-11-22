@@ -1,5 +1,6 @@
 use reqwest::Client;
 pub mod datasets;
+pub mod webhook;
 use std::sync::OnceLock;
 
 pub struct HttpClient {

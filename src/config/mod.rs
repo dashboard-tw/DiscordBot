@@ -18,6 +18,7 @@ pub struct Config {
     pub client_config: ClientConfig,
     pub admins: Vec<String>,
     pub key: Option<String>,
+    pub webhook_url: Option<String>,
 }
 
 impl ClientConfig {
@@ -72,6 +73,8 @@ impl Config {
             client_config: client_config,
             key: None,
             admins: admins,
+            webhook_url: env::var("WEBHOOK_URL").ok()
+                .map(|url| url.trim().to_string()).filter(|url| !url.is_empty()),
         })
     }
 }

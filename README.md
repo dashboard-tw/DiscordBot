@@ -17,7 +17,14 @@ PREFIX="yourbotprefix"            // 設置機器人的觸發前綴(預設為"!"
 CLIENT_ID="yourclientid"          // 設置dashboard.tw的client id
 CLIENT_SECRET="yourclientsecret"  // 設置dashboard.tw的client secret
 ADMINS=[]                         // 設置管理指令如 ADMINS='["123456789012345678"]'
+WEBHOOK_URL=""                    // 設置機器人通知(留空則不啟用)
 ```
+
+## 意圖
+
+- [x] 訊息意圖
+- [ ] 成員意圖
+- [ ] 狀態意圖
 
 ## 自動更新
 
