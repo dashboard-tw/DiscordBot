@@ -2,6 +2,31 @@ use super::*;
 use serde_json::json;
 use std::time::Duration;
 
+#[tokio::test]
+async fn image_reply_uploads_attachment_and_falls_back_to_text() {
+    use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpListener};
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/image", listener.local_addr().unwrap());
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut request = [0; 4096];
+        socket.read(&mut request).await.unwrap();
+        socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 3\r\nConnection: close\r\n\r\npng").await.unwrap();
+    });
+    let (embed, attachment) = attach_image(CreateEmbed::new().title("test").image(url)).await.unwrap();
+    assert_eq!(attachment.unwrap().data, b"png");
+    let embed = serde_json::to_value(embed).unwrap();
+    assert_eq!(embed["image"]["url"], "attachment://dataset-image.png");
+    server.await.unwrap();
+
+    let (embed, attachment) = attach_image(CreateEmbed::new().title("test").image("invalid://image")).await.unwrap();
+    assert!(attachment.is_none());
+    let embed = serde_json::to_value(embed).unwrap();
+    assert_eq!(embed["title"], "test");
+    assert!(embed.get("image").is_none());
+}
+
 #[test]
 fn single_page_commands_have_no_page_parameter() {
     let commands = crate::commands::all();

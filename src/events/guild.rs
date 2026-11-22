@@ -1,7 +1,8 @@
 use poise::serenity_prelude as serenity;
-use serde_json::{Value, json};
+#[cfg(test)]
+use serde_json::json;
 
-use crate::{config::Config, http::webhook};
+use crate::{config::Config, http::webhook::WebhookPayload};
 
 struct Notification {
     joined: bool,
@@ -47,7 +48,7 @@ impl Notification {
         }
     }
 
-    fn payload(&self) -> Value {
+    fn payload(&self) -> WebhookPayload {
         let owner = match self.owner_id {
             Some(id) => match &self.owner_name {
                 Some(name) => format!("{name}\n<@{id}>（ID：{id}）"),
@@ -55,23 +56,17 @@ impl Notification {
             },
             None => "未知".into(),
         };
-        let mut payload = json!({
-            "allowed_mentions": { "parse": [] },
-            "embeds": [{
-                "title": if self.joined { "機器人加入伺服器" } else { "機器人退出伺服器" },
-                "color": if self.joined { 0x57F287 } else { 0xED4245 },
-                "fields": [
-                    { "name": "伺服器名稱", "value": if self.name.is_empty() { "未知伺服器" } else { &self.name } },
-                    { "name": "伺服器 ID", "value": self.id.to_string() },
-                    { "name": "成員人數", "value": self.member_count.map(|count| count.to_string()).unwrap_or_else(|| "未知".into()) },
-                    { "name": "擁有者", "value": owner },
-                ],
-            }],
-        });
+        let mut embed = serenity::CreateEmbed::new()
+            .title(if self.joined { "機器人加入伺服器" } else { "機器人退出伺服器" })
+            .colour(if self.joined { 0x57F287 } else { 0xED4245 })
+            .field("伺服器名稱", if self.name.is_empty() { "未知伺服器" } else { &self.name }, false)
+            .field("伺服器 ID", self.id.to_string(), false)
+            .field("成員人數", self.member_count.map(|count| count.to_string()).unwrap_or_else(|| "未知".into()), false)
+            .field("擁有者", owner, false);
         if let Some(url) = &self.icon_url {
-            payload["embeds"][0]["thumbnail"] = json!({ "url": url });
+            embed = embed.thumbnail(url);
         }
-        payload
+        WebhookPayload::new().embed(embed)
     }
 }
 
@@ -84,7 +79,7 @@ pub async fn handle(event: &serenity::FullEvent) {
     let Some(url) = Config::get().webhook_url.as_deref() else {
         return;
     };
-    if let Err(error) = webhook::send(url, &notification.payload()).await {
+    if let Err(error) = notification.payload().send(url).await {
         eprintln!("Guild webhook notification failed: {error}");
     }
 }
@@ -105,7 +100,7 @@ mod tests {
     #[test]
     fn guild_removal_notifies_without_cached_guild() {
         let notification = Notification::from_event(&removal(false)).unwrap();
-        let payload = notification.payload();
+        let payload = serde_json::to_value(notification.payload()).unwrap();
         assert_eq!(payload["embeds"][0]["title"], "機器人退出伺服器");
         assert_eq!(payload["embeds"][0]["fields"][0]["value"], "未知伺服器");
         assert_eq!(payload["embeds"][0]["fields"][1]["value"], "123");
@@ -131,7 +126,7 @@ mod tests {
             owner_id: Some(serenity::UserId::new(789)),
             owner_name: Some("測試擁有者".into()),
         };
-        let payload = notification.payload();
+        let payload = serde_json::to_value(notification.payload()).unwrap();
         assert_eq!(payload["embeds"][0]["title"], "機器人加入伺服器");
         assert_eq!(payload["embeds"][0]["fields"][0]["value"], "測試伺服器");
         assert_eq!(payload["embeds"][0]["fields"][1]["value"], "456");
@@ -158,7 +153,7 @@ mod tests {
             assert_eq!(notification.member_count, Some(42));
             assert_eq!(notification.owner_id, Some(guild.owner_id));
             assert_eq!(notification.icon_url, guild.icon_url());
-            assert_eq!(notification.payload()["embeds"][0]["fields"][3]["value"], "<@789>（ID：789）");
+            assert_eq!(serde_json::to_value(notification.payload()).unwrap()["embeds"][0]["fields"][3]["value"], "<@789>（ID：789）");
         }
         let existing = serenity::FullEvent::GuildCreate { guild, is_new: Some(false) };
         assert!(Notification::from_event(&existing).is_none());

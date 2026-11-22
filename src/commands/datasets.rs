@@ -228,6 +228,39 @@ pub fn build_embed(
     Ok(embed)
 }
 
+async fn attach_image(embed: CreateEmbed) -> Result<(CreateEmbed, Option<poise::serenity_prelude::CreateAttachment>), Error> {
+    let value = serde_json::to_value(&embed)?;
+    let image_url = value.pointer("/image/url").and_then(Value::as_str);
+    let mut file = None;
+    let embed = if let Some(url) = image_url {
+        match crate::http::image::download(url).await {
+            Ok(attachment) => {
+                let embed = embed.image(format!("attachment://{}", attachment.filename));
+                file = Some(attachment);
+                embed
+            }
+            Err(error) => {
+                eprintln!("Dataset image download failed: {error}");
+                let mut value = value;
+                value.as_object_mut().expect("Embed must be an object").remove("image");
+                poise::serenity_prelude::CreateEmbed::from(serde_json::from_value::<poise::serenity_prelude::Embed>(value)?)
+            }
+        }
+    } else {
+        embed
+    };
+    Ok((embed, file))
+}
+
+async fn build_reply(embed: CreateEmbed) -> Result<CreateReply, Error> {
+    let (embed, attachment) = attach_image(embed).await?;
+    let mut reply = CreateReply::new().embed(embed).allowed_mentions(CreateAllowedMentions::new());
+    if let Some(attachment) = attachment {
+        reply = reply.attachment(attachment);
+    }
+    Ok(reply)
+}
+
 pub async fn send_dataset(
     ctx: Context<'_>,
     dataset: &str,
@@ -266,11 +299,7 @@ pub async fn send_dataset(
     {
         Ok(response) => match build_embed(dataset, endpoint, &response, page.unwrap_or(1)) {
             Ok(embed) => {
-                ctx.send(
-                    CreateReply::new()
-                        .embed(embed)
-                        .allowed_mentions(CreateAllowedMentions::new()),
-                )
+                ctx.send(build_reply(embed).await?)
                 .await?;
             }
             Err(message) => {

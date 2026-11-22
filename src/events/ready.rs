@@ -1,7 +1,8 @@
+#[cfg(test)]
 use serde_json::{Value, json};
 use poise::serenity_prelude as serenity;
 
-use crate::{config::Config, http::webhook};
+use crate::{config::Config, http::webhook::WebhookPayload};
 
 #[derive(Clone, Debug)]
 struct Notification<'a> {
@@ -14,23 +15,15 @@ impl<'a> Notification<'a> {
             ready: ready
         }
     }
-    fn payload(&self) -> Value {
+    fn payload(&self) -> WebhookPayload {
         let guild_count = self.ready.guilds.len();
-        let mut payload = json!({
-            "allowed_mentions": { "parse": [] },
-            "embeds": [{
-                "title": "機器人上線",
-                "color": 0x1B96DE,
-                "fields": [
-                    { "name": "機器人資料", "value": format!("{}(`{}`)", self.ready.user.name, self.ready.user.id) },
-                    { "name": "伺服器數量", "value": guild_count.to_string() },
-                ],
-            }],
-        });
+        let mut embed = serenity::CreateEmbed::new().title("機器人上線").colour(0x1B96DE)
+            .field("機器人資料", format!("{}(`{}`)", self.ready.user.name, self.ready.user.id), false)
+            .field("伺服器數量", guild_count.to_string(), false);
         if let Some(url) = &self.ready.user.avatar_url() {
-            payload["embeds"][0]["thumbnail"] = json!({ "url": url });
+            embed = embed.thumbnail(url);
         }
-        payload
+        WebhookPayload::new().embed(embed)
     }
 }
 
@@ -41,7 +34,7 @@ pub async fn handle(ready: &serenity::Ready) {
     let Some(url) = Config::get().webhook_url.as_deref() else {
         return;
     };
-    if let Err(error) = webhook::send(url, &notification.payload()).await {
+    if let Err(error) = notification.payload().send(url).await {
         eprintln!("Ready webhook notification failed: {error}");
     }
 }
@@ -66,7 +59,7 @@ mod tests {
             "resume_gateway_url": "wss://gateway.discord.gg",
             "application": { "id": "123", "flags": 0 },
         })).unwrap();
-        let payload = Notification::from_event(&ready).payload();
+        let payload = serde_json::to_value(Notification::from_event(&ready).payload()).unwrap();
         assert_eq!(payload["embeds"][0]["title"], "機器人上線");
         assert_eq!(field_value(&payload, "機器人資料"), "test-bot(`123`)");
         assert_eq!(field_value(&payload, "伺服器數量"), "1");
@@ -74,9 +67,9 @@ mod tests {
         assert!(payload["embeds"][0].get("thumbnail").is_none());
 
         ready.user.avatar = Some("0123456789abcdef0123456789abcdef".parse().unwrap());
-        let payload = Notification::from_event(&ready).payload();
+        let payload = serde_json::to_value(Notification::from_event(&ready).payload()).unwrap();
         assert_eq!(payload["embeds"][0]["thumbnail"]["url"], ready.user.avatar_url().unwrap());
         ready.guilds.clear();
-        assert_eq!(field_value(&Notification::from_event(&ready).payload(), "伺服器數量"), "0");
+        assert_eq!(field_value(&serde_json::to_value(Notification::from_event(&ready).payload()).unwrap(), "伺服器數量"), "0");
     }
 }
