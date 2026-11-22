@@ -18,8 +18,8 @@ impl<'a> Notification<'a> {
     fn payload(&self) -> WebhookPayload {
         let guild_count = self.ready.guilds.len();
         let mut embed = serenity::CreateEmbed::new().title("機器人上線").colour(0x1B96DE)
-            .field("機器人資料", format!("{}(`{}`)", self.ready.user.name, self.ready.user.id), false)
-            .field("伺服器數量", guild_count.to_string(), false);
+            .field("機器人資料", format!("{}(`{}`)", self.ready.user.name, self.ready.user.id), true)
+            .field("伺服器數量", guild_count.to_string(), true);
         if let Some(url) = &self.ready.user.avatar_url() {
             embed = embed.thumbnail(url);
         }

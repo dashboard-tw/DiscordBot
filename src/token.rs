@@ -1,3 +1,6 @@
+use poise::serenity_prelude as serenity;
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use crate::{
     bot::Error,
     cache::{self, TokenAnswer},
@@ -58,7 +61,19 @@ async fn refresh_token_from(config: &Config, base_url: &str) -> Result<TokenAnsw
     let message = refresh_notification(&token);
     println!("{message}");
     if let Some(url) = config.webhook_url.as_deref() {
-        if let Err(error) = WebhookPayload::new().content(format!("```text\n{message}\n```")).send(url).await {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("System time error")
+            .as_secs();
+
+        let relative_md_expires_in = format!("<t:{}:R>", now + &token.expires_in);
+        let relative_md_update_in = format!("<t:{}:R>", now + 82800);
+
+        let embed = serenity::CreateEmbed::new().title("Token刷新").colour(0x1B96DE)
+            .field("過期時間", format!("{}", relative_md_expires_in), true)
+            .field("更新時間", format!("{}", relative_md_update_in), true)
+            .field("原始回應", format!("```text\n{message}\n```"), false);
+        if let Err(error) = WebhookPayload::new().embed(embed).send(url).await {
             eprintln!("Token refresh webhook notification failed: {error}");
         }
     }
