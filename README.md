@@ -20,6 +20,25 @@ ADMINS=[]                         // 設置管理指令如 ADMINS='["12345678901
 WEBHOOK_URL=""                    // 設置機器人通知(留空則不啟用)
 ```
 
+## 使用 Docker Compose 運行
+
+本專案支援使用 Docker Compose 進行容器化部署與管理：
+
+```bash
+# 1. 複製並設定環境變數
+cp .env.example .env
+# 請編輯 .env 填入您的設定
+
+# 2. 構建並於背景啟動服務
+docker compose up -d --build
+
+# 3. 查看執行日誌
+docker compose logs -f
+
+# 4. 停止服務
+docker compose down
+```
+
 ## 意圖
 
 - [x] 訊息意圖
