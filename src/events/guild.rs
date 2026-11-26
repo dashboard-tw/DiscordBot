@@ -76,7 +76,7 @@ pub async fn handle(event: &serenity::FullEvent) {
     };
     println!("{} guild: {} ({})", if notification.joined { "Joined" } else { "Left" }, notification.name, notification.id);
 
-    let Some(url) = Config::get().webhook_url.as_deref() else {
+    let Some(url) = Config::get().bot.webhook_url.as_deref() else {
         return;
     };
     if let Err(error) = notification.payload().send(url).await {

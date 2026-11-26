@@ -31,7 +31,7 @@ impl<'a> Notification<'a> {
 pub async fn handle(ready: &serenity::Ready) {
     let notification = Notification::from_event(ready);
     println!("Logged in as {}", ready.user.name);
-    let Some(url) = Config::get().webhook_url.as_deref() else {
+    let Some(url) = Config::get().bot.webhook_url.as_deref() else {
         return;
     };
     if let Err(error) = notification.payload().send(url).await {

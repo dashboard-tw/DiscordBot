@@ -9,15 +9,23 @@
 
 ## 基本設置
 
-使用`.env.example`進行設置後將其改名為`.env`環境變數檔案：
+複製`config.example.yml`改為`config.yml`填入以下設定。程式會讀取目前工作目錄下的 `config.yml`：
 
-```ini
-TOKEN="yourbottoken"              // 設置機器人的TOKEN
-PREFIX="yourbotprefix"            // 設置機器人的觸發前綴(預設為"!")
-CLIENT_ID="yourclientid"          // 設置dashboard.tw的client id
-CLIENT_SECRET="yourclientsecret"  // 設置dashboard.tw的client secret
-ADMINS=[]                         // 設置管理指令如 ADMINS='["123456789012345678"]'
-WEBHOOK_URL=""                    // 設置機器人通知(留空則不啟用)
+```yaml
+bot:
+  token: "yourbottoken"           # 機器人的 TOKEN
+  prefix: "!"                     # 觸發前綴省略時預設為 !
+  client_config:
+    id: "yourclientid"            # dashboard.tw 的 client id
+    secret: "yourclientsecret"    # dashboard.tw 的 client secret
+  admins: []                      # 可操作者的ID，例如 ["123456789012345678"]
+  webhook_url: ""                 # 留空或省略則不啟用通知
+
+# 選填(功能資料尚未完成)
+features:
+  alert:                          # 功能名稱
+    enable: true                  # 是否啟用功能
+    channels: []                  # 通知頻道的ID，例如 ["123456789012345678"]
 ```
 
 ## 意圖
@@ -34,22 +42,24 @@ WEBHOOK_URL=""                    // 設置機器人通知(留空則不啟用)
 
 - [x] 基本交互
   - [x] 機器人啟動
-  - [x] 環境變數
+  - [x] YAML 設定檔
   - [x] 延遲測試
   - [x] 錯誤處理
+  - [ ] 日誌紀錄
+  - [ ] 更多...
 
 - [ ] API交互
   - [x] 檢查健康狀態
   - [x] 自動刷新token
   - [x] 強制刷新token
   - [x] 請求資料
-  - [ ] MQTT訂閱
+  - [ ] MQTT訂閱(暫無)
   - [ ] 更多...
 
 - [ ] 資料處理
   - [x] 快取管理
   - [x] 資料格式
-  - [ ] 資料訂閱
+  - [ ] 資料訂閱(暫無)
 
 - [x] 自動生成
   - [x] 資料格式
@@ -57,13 +67,13 @@ WEBHOOK_URL=""                    // 設置機器人通知(留空則不啟用)
 
 - [x] 開發者功能
   - [x] 強制刷新token
-  - [x] 更多...
 
 - [ ] 使用者體驗優化
   - [x] 斜線指令
   - [x] 嵌入訊息
-  - [ ] 圖片顯示
+  - [x] 圖片顯示
   - [ ] 資料繪圖
+  - [ ] 自動通知
   - [ ] 更多...
 
 ## 授權

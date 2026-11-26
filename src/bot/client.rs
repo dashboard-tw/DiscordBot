@@ -24,14 +24,14 @@ pub async fn run(config: &'static Config) -> Result<(), Error> {
             event_handler: |framework, event| Box::pin(events::event_handler(framework, event)),
             commands: commands::all(),
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some(config.prefix.as_str().into()),
+                prefix: Some(config.bot.prefix.as_str().into()),
                 ..Default::default()
             },
             ..Default::default()
         })
         .build();
 
-    let mut client = serenity::ClientBuilder::new(config.token.as_str(), intents)
+    let mut client = serenity::ClientBuilder::new(config.bot.token.as_str(), intents)
         .framework(framework)
         .await?;
 
