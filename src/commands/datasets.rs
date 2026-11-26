@@ -2,6 +2,7 @@ use super::presentation::presentation;
 use crate::{
     bot::{Context, Error},
     http::datasets::{DatasetResponse, Endpoint, Query},
+    logger,
 };
 use poise::{
     CreateReply,
@@ -240,7 +241,7 @@ async fn attach_image(embed: CreateEmbed) -> Result<(CreateEmbed, Option<poise::
                 embed
             }
             Err(error) => {
-                eprintln!("Dataset image download failed: {error}");
+                logger::error!("Dataset image download failed: {error}");
                 let mut value = value;
                 value.as_object_mut().expect("Embed must be an object").remove("image");
                 poise::serenity_prelude::CreateEmbed::from(serde_json::from_value::<poise::serenity_prelude::Embed>(value)?)
@@ -307,7 +308,7 @@ pub async fn send_dataset(
             }
         },
         Err(error) => {
-            eprintln!("Dataset {dataset}/{} failed: {error}", endpoint.as_str());
+            logger::error!("Dataset {dataset}/{} failed: {error}", endpoint.as_str());
             ctx.say(
                 "目前無法取得資訊，可能是來源服務暫時異常或查詢條件不受支援，請稍後再試。",
             )

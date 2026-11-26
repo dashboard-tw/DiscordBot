@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use crate::bot::{Context, Error};
 use crate::cache::TokenAnswer;
-use crate::{config::Config, token};
+use crate::{config::Config, token, logger};
 
 #[poise::command(prefix_command, slash_command)]
 pub async fn refresh(ctx: Context<'_>) -> Result<(), Error> {
@@ -35,7 +35,7 @@ fn refresh_message(result: Result<TokenAnswer, Error>, elapsed: Duration) -> Str
             elapsed.as_secs_f64() * 1000.0
         ),
         Err(err) => {
-            eprintln!("Admin token refresh failed: {err}");
+            logger::error!("Admin token refresh failed: {err}");
             "Token 更新失敗原有快取未變更，請查看伺服器記錄".to_string()
         }
     }

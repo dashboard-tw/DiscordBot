@@ -2,7 +2,11 @@
 use serde_json::{Value, json};
 use poise::serenity_prelude as serenity;
 
-use crate::{config::Config, http::webhook::WebhookPayload};
+use crate::{
+    config::Config,
+    http::webhook::WebhookPayload,
+    logger,
+};
 
 #[derive(Clone, Debug)]
 struct Notification<'a> {
@@ -30,12 +34,12 @@ impl<'a> Notification<'a> {
 
 pub async fn handle(ready: &serenity::Ready) {
     let notification = Notification::from_event(ready);
-    println!("Logged in as {}", ready.user.name);
+    logger::info!("Logged in as {}", ready.user.name);
     let Some(url) = Config::get().bot.webhook_url.as_deref() else {
         return;
     };
     if let Err(error) = notification.payload().send(url).await {
-        eprintln!("Ready webhook notification failed: {error}");
+        logger::error!("Ready webhook notification failed: {error}");
     }
 }
 

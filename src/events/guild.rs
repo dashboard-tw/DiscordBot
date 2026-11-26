@@ -2,7 +2,11 @@ use poise::serenity_prelude as serenity;
 #[cfg(test)]
 use serde_json::json;
 
-use crate::{config::Config, http::webhook::WebhookPayload};
+use crate::{
+    config::Config,
+    http::webhook::WebhookPayload,
+    logger,
+};
 
 struct Notification {
     joined: bool,
@@ -74,13 +78,13 @@ pub async fn handle(event: &serenity::FullEvent) {
     let Some(notification) = Notification::from_event(event) else {
         return;
     };
-    println!("{} guild: {} ({})", if notification.joined { "Joined" } else { "Left" }, notification.name, notification.id);
+    logger::info!("{} guild: {} ({})", if notification.joined { "Joined" } else { "Left" }, notification.name, notification.id);
 
     let Some(url) = Config::get().bot.webhook_url.as_deref() else {
         return;
     };
     if let Err(error) = notification.payload().send(url).await {
-        eprintln!("Guild webhook notification failed: {error}");
+        logger::error!("Guild webhook notification failed: {error}");
     }
 }
 
