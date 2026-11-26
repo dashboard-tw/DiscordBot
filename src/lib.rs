@@ -7,3 +7,4 @@ pub mod http;
 pub mod models;
 pub mod tasks;
 pub mod token;
+pub mod logger;

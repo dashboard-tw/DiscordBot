@@ -6,6 +6,7 @@ use crate::{
     cache::{self, TokenAnswer},
     config::{self, Config},
     http::{HttpClient, webhook::WebhookPayload},
+    logger,
 };
 
 pub async fn access_token() -> Result<String, Error> {
@@ -34,8 +35,8 @@ async fn fetch_token_from(config: &Config, base_url: &str) -> Result<TokenAnswer
         .timeout(std::time::Duration::from_secs(30))
         .form(&[
             ("grant_type", "client_credentials"),
-            ("client_id", config.client_config.id.as_str()),
-            ("client_secret", config.client_config.secret.as_str()),
+            ("client_id", config.bot.client_config.id.as_str()),
+            ("client_secret", config.bot.client_config.secret.as_str()),
         ])
         .send()
         .await?;
@@ -59,8 +60,8 @@ async fn refresh_token_from(config: &Config, base_url: &str) -> Result<TokenAnsw
     let token = fetch_token_from(config, base_url).await?;
     cache::update_token(&token.access_token, token.expires_in).await?;
     let message = refresh_notification(&token);
-    println!("{message}");
-    if let Some(url) = config.webhook_url.as_deref() {
+    logger::info!("{message}");
+    if let Some(url) = config.bot.webhook_url.as_deref() {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("System time error")
@@ -74,7 +75,7 @@ async fn refresh_token_from(config: &Config, base_url: &str) -> Result<TokenAnsw
             .field("更新時間", format!("{}", relative_md_update_in), true)
             .field("原始回應", format!("```text\n{message}\n```"), false);
         if let Err(error) = WebhookPayload::new().embed(embed).send(url).await {
-            eprintln!("Token refresh webhook notification failed: {error}");
+            logger::error!("Token refresh webhook notification failed: {error}");
         }
     }
     Ok(token)

@@ -1,0 +1,14 @@
+bot:
+  token: "yourbottoken"
+  prefix: "!" # 省略時預設為 !
+  client_config:
+    id: "yourclientid"
+    secret: "yourclientsecret"
+  admins: [] # 例如["123456789012345678"] ID請加上引號
+  webhook_url: "" # 留空或省略則不啟用通知
+
+# 選填(功能資料尚未完成)
+features:
+  alert:                          # 功能名稱
+    enable: true                  # 是否啟用功能
+    channels: []                  # 通知頻道的ID，例如 ["123456789012345678"]

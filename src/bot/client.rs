@@ -1,7 +1,7 @@
 use poise::serenity_prelude as serenity;
 
 use super::{Data, Error};
-use crate::{commands, config::Config, events, tasks};
+use crate::{commands, config::Config, events, tasks, logger};
 
 pub async fn run(config: &'static Config) -> Result<(), Error> {
     let intents =
@@ -15,7 +15,7 @@ pub async fn run(config: &'static Config) -> Result<(), Error> {
 
                 let result = serenity::Command::set_global_commands(&ctx.http, commands).await?;
 
-                println!("Registered {} slash commands!", result.len());
+                logger::info!("Registered {} slash commands!", result.len());
 
                 Ok(Data::default())
             })
@@ -24,19 +24,19 @@ pub async fn run(config: &'static Config) -> Result<(), Error> {
             event_handler: |framework, event| Box::pin(events::event_handler(framework, event)),
             commands: commands::all(),
             prefix_options: poise::PrefixFrameworkOptions {
-                prefix: Some(config.prefix.as_str().into()),
+                prefix: Some(config.bot.prefix.as_str().into()),
                 ..Default::default()
             },
             ..Default::default()
         })
         .build();
 
-    let mut client = serenity::ClientBuilder::new(config.token.as_str(), intents)
+    let mut client = serenity::ClientBuilder::new(config.bot.token.as_str(), intents)
         .framework(framework)
         .await?;
 
     tokio::spawn(async move {
-        println!("Refresh task start");
+        logger::info!("Refresh task start");
         tasks::refresh::background_refresh_task(config).await;
     });
 
