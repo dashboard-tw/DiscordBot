@@ -33,9 +33,8 @@ features:
 本專案支援使用 Docker Compose 進行容器化部署與管理：
 
 ```bash
-# 1. 複製並設定環境變數
-cp .env.example .env
-# 請編輯 .env 填入您的設定
+# 1. 首次部署時複製設定範例（已有 config.yml 時請勿覆寫）
+cp config.example.yml config.yml
 
 # 2. 構建並於背景啟動服務
 docker compose up -d --build

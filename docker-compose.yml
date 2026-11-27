@@ -5,8 +5,14 @@ services:
       dockerfile: Dockerfile
     container_name: twdash-bot
     restart: unless-stopped
-    env_file:
-      - .env
+    working_dir: /app
+    volumes:
+      - type: bind
+        source: ./config.yml
+        target: /app/config.yml
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       - TZ=Asia/Taipei
       - RUST_LOG=info
