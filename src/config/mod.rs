@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 static CONFIG: OnceLock<Result<Config, String>> = OnceLock::new();
 
 pub const BASE_URL: &'static str = "https://dashboard.tw/api/v1";
+pub const SERVER_URL: &'static str = "https://discord.com/invite/gU5gndueZH";
 
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

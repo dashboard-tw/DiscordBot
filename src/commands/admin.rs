@@ -5,6 +5,7 @@ use crate::bot::{Context, Error};
 use crate::cache::TokenAnswer;
 use crate::{config::Config, token, logger};
 
+#[doc = "強制刷新憑證"]
 #[poise::command(prefix_command, slash_command)]
 pub async fn refresh(ctx: Context<'_>) -> Result<(), Error> {
     let config = Config::get();
