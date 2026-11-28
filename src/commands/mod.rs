@@ -4,10 +4,11 @@ mod environment;
 mod living;
 mod ping;
 mod info;
-mod presentation;
 mod society;
 mod transport;
 mod weather;
+
+pub mod presentation;
 
 use crate::bot::{Data, Error};
 

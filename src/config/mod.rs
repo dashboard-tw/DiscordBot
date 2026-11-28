@@ -7,6 +7,8 @@ static CONFIG: OnceLock<Result<Config, String>> = OnceLock::new();
 
 pub const BASE_URL: &'static str = "https://dashboard.tw/api/v1";
 pub const SERVER_URL: &'static str = "https://discord.com/invite/gU5gndueZH";
+pub const GITHUB_URL: &'static str = "https://github.com/dashboard-tw";
+pub const PROJECT_NAME: &'static str = "DiscordBot";
 
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]

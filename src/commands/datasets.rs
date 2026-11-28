@@ -3,27 +3,18 @@ use crate::{
     bot::{Context, Error},
     http::datasets::{DatasetResponse, Endpoint, Query},
     logger,
+    visual::chart::{image_key, generated_chart, shorten, display_value},
+    config::GITHUB_URL
 };
 use poise::{
     CreateReply,
-    serenity_prelude::{CreateAllowedMentions, CreateEmbed, CreateEmbedFooter},
+    serenity_prelude::{CreateAllowedMentions, CreateAttachment, CreateEmbed, CreateEmbedFooter, Colour},
 };
 use serde_json::Value;
 
 // rust test
 #[cfg(test)]
 mod tests;
-
-fn shorten(text: &str, limit: usize) -> String {
-    let text = text
-        .replace(['`', '*', '_', '~', '|'], "")
-        .replace('@', "＠");
-    let mut result: String = text.chars().take(limit).collect();
-    if text.chars().count() > limit {
-        result.push('…');
-    }
-    result
-}
 
 fn county_code(input: Option<String>) -> Result<Option<String>, &'static str> {
     let Some(input) = input
@@ -63,17 +54,6 @@ fn county_code(input: Option<String>) -> Result<Option<String>, &'static str> {
         .ok_or("請輸入有效的縣市名稱或代碼，例如臺北市、63000。")
 }
 
-fn display_value(value: &Value) -> Option<String> {
-    match value {
-        Value::Null => None,
-        Value::String(s) if s.trim().is_empty() => None,
-        Value::String(s) => Some(shorten(s, 100)),
-        Value::Bool(b) => Some(if *b { "是" } else { "否" }.to_owned()),
-        Value::Number(n) => Some(n.to_string()),
-        _ => None,
-    }
-}
-
 pub fn build_embed(
     dataset: &str,
     endpoint: Endpoint,
@@ -84,15 +64,7 @@ pub fn build_embed(
     let rows = response.body["data"]
         .as_array()
         .ok_or("目前無法解析資料，請稍後再試。")?;
-    let image_key = if matches!(endpoint, Endpoint::Sites) {
-        None
-    } else if info.fields.iter().any(|(key, _, _)| *key == "image_url") {
-        Some("image_url")
-    } else if matches!(dataset, "radar_image" | "satellite_image" | "radar_layer" | "cloud_layer" | "wind_layer") {
-        Some("url")
-    } else {
-        None
-    };
+    let image_key = image_key(dataset, endpoint, info.fields);
     let page_size = if image_key.is_some() { 1 } else { 3 };
     let pages = rows.len().div_ceil(page_size).max(1);
     if page == 0 || page as usize > pages {
@@ -233,7 +205,7 @@ async fn attach_image(embed: CreateEmbed) -> Result<(CreateEmbed, Option<poise::
     let value = serde_json::to_value(&embed)?;
     let image_url = value.pointer("/image/url").and_then(Value::as_str);
     let mut file = None;
-    let embed = if let Some(url) = image_url {
+    let embed = if let Some(url) = image_url.filter(|url| !url.starts_with("attachment://")) {
         match crate::http::image::download(url).await {
             Ok(attachment) => {
                 let embed = embed.image(format!("attachment://{}", attachment.filename));
@@ -253,15 +225,19 @@ async fn attach_image(embed: CreateEmbed) -> Result<(CreateEmbed, Option<poise::
     Ok((embed, file))
 }
 
-async fn build_reply(embed: CreateEmbed) -> Result<CreateReply, Error> {
+async fn build_reply(
+    embed: CreateEmbed,
+    generated_chart: Option<CreateAttachment>,
+) -> Result<CreateReply, Error> {
     let (embed, attachment) = attach_image(embed).await?;
     let mut reply = CreateReply::new().embed(embed).allowed_mentions(CreateAllowedMentions::new());
-    if let Some(attachment) = attachment {
+    if let Some(attachment) = attachment.or(generated_chart) {
         reply = reply.attachment(attachment);
     }
     Ok(reply)
 }
 
+// Image dataset haven't set up
 pub async fn send_dataset(
     ctx: Context<'_>,
     dataset: &str,
@@ -300,11 +276,32 @@ pub async fn send_dataset(
     {
         Ok(response) => match build_embed(dataset, endpoint, &response, page.unwrap_or(1)) {
             Ok(embed) => {
-                ctx.send(build_reply(embed).await?)
-                .await?;
+                let page = page.unwrap_or(1);
+                let generated_chart =
+                    match generated_chart(&embed, dataset, endpoint, &response, page) {
+                        Ok(chart) => {
+                            logger::info!("Generated chart: is_some={}", chart.is_some());
+                            chart
+                        },
+                        Err(error) => {
+                            logger::error!("Dataset chart generation failed: {error}");
+                            None
+                        }
+                    };
+                let mut embed = embed;
+                if generated_chart.is_some() {
+                    logger::info!("Embed image bytes");
+                    embed = embed.image("attachment://dataset-chart.png");
+                }
+                ctx.send(build_reply(embed, generated_chart).await?).await?;
             }
             Err(message) => {
-                ctx.say(message).await?;
+                let embed = CreateEmbed::new().title("發生錯誤")
+                    .description(format!("```\n{}```", message))
+                    .color(Colour::new(0xDA373C))
+                    .url(GITHUB_URL);
+                let builder = CreateReply::new().embed(embed);
+                ctx.send(builder).await?;
             }
         },
         Err(error) => {

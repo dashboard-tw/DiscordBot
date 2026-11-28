@@ -8,3 +8,4 @@ pub mod models;
 pub mod tasks;
 pub mod token;
 pub mod logger;
+pub mod visual;

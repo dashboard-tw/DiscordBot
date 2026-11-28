@@ -28,6 +28,30 @@ async fn image_reply_uploads_attachment_and_falls_back_to_text() {
 }
 
 #[test]
+fn generated_chart_is_png_and_skips_embeds_with_an_existing_image() {
+    let response = DatasetResponse {
+        body: json!({"data": [
+            {"station_id": "A", "temp_c": 20.0},
+            {"station_id": "B", "temp_c": 25.0},
+        ]}),
+        cached: false,
+        age: Duration::ZERO,
+    };
+    let plain_embed = build_embed("weather_obs", Endpoint::Latest, &response, 1).unwrap();
+    let chart = generated_chart(&plain_embed, "weather_obs", Endpoint::Latest, &response, 1)
+        .unwrap()
+        .unwrap();
+    assert_eq!(&chart.data[..8], b"\x89PNG\r\n\x1a\n");
+
+    let image_embed = CreateEmbed::new().image("https://example.com/image.png");
+    assert!(
+        generated_chart(&image_embed, "weather_obs", Endpoint::Latest, &response, 1)
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[test]
 fn single_page_commands_have_no_page_parameter() {
     let commands = crate::commands::all();
     let single_page = ["radar_image", "satellite_image", "radar_layer", "cloud_layer", "wind_layer", "power_load"];
